@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/bash
 # -*- mode: sh; tab-width: 2; indent-tabs-mode: s; coding: utf-8 -*-
 
 # This is the InternetX autoDNS xml api wrapper for acme.sh
@@ -8,9 +8,14 @@
 #     export AUTODNS_USER="username"
 #     export AUTODNS_PASSWORD="password"
 #     export AUTODNS_CONTEXT="context"
+#     export AUTODNS_SHARED_SECRET="token"
 #
 # Usage:
 #     acme.sh --issue --dns dns_autodns -d example.com
+#
+# Dependencies:
+# -------------
+# - oathtool (When using 2 Factor Authentication)#
 
 AUTODNS_API="https://gateway.autodns.com"
 
@@ -24,6 +29,7 @@ dns_autodns_add() {
   AUTODNS_USER="${AUTODNS_USER:-$(_readaccountconf_mutable AUTODNS_USER)}"
   AUTODNS_PASSWORD="${AUTODNS_PASSWORD:-$(_readaccountconf_mutable AUTODNS_PASSWORD)}"
   AUTODNS_CONTEXT="${AUTODNS_CONTEXT:-$(_readaccountconf_mutable AUTODNS_CONTEXT)}"
+  AUTODNS_SHARED_SECRET="${AUTODNS_SHARED_SECRET:-$(_readaccountconf_mutable AUTODNS_SHARED_SECRET)}"
 
   if [ -z "$AUTODNS_USER" ] || [ -z "$AUTODNS_CONTEXT" ] || [ -z "$AUTODNS_PASSWORD" ]; then
     _err "You don't specify autodns user, password and context."
@@ -33,6 +39,7 @@ dns_autodns_add() {
   _saveaccountconf_mutable AUTODNS_USER "$AUTODNS_USER"
   _saveaccountconf_mutable AUTODNS_PASSWORD "$AUTODNS_PASSWORD"
   _saveaccountconf_mutable AUTODNS_CONTEXT "$AUTODNS_CONTEXT"
+  _saveaccountconf_mutable AUTODNS_SHARED_SECRET "$AUTODNS_SHARED_SECRET"
 
   _debug "First detect the root zone"
 
@@ -67,6 +74,7 @@ dns_autodns_rm() {
   AUTODNS_USER="${AUTODNS_USER:-$(_readaccountconf_mutable AUTODNS_USER)}"
   AUTODNS_PASSWORD="${AUTODNS_PASSWORD:-$(_readaccountconf_mutable AUTODNS_PASSWORD)}"
   AUTODNS_CONTEXT="${AUTODNS_CONTEXT:-$(_readaccountconf_mutable AUTODNS_CONTEXT)}"
+  AUTODNS_SHARED_SECRET="${AUTODNS_SHARED_SECRET:-$(_readaccountconf_mutable AUTODNS_SHARED_SECRET)}"
 
   if [ -z "$AUTODNS_USER" ] || [ -z "$AUTODNS_CONTEXT" ] || [ -z "$AUTODNS_PASSWORD" ]; then
     _err "You don't specify autodns user, password and context."
@@ -141,11 +149,20 @@ _get_autodns_zone() {
 }
 
 _build_request_auth_xml() {
+    if ! _exists oathtool; then
+      _err "Please install oathtool to use 2 Factor Authentication."
+      _err ""
+      return 1
+    fi
+        echo $AUTODNS_SHARED_SECRET
+    AUTODNS_SHARED_SECRET="$(oathtool -b --totp "${AUTODNS_SHARED_SECRET}" 2>/dev/null)"
+        echo $AUTODNS_SHARED_SECRET
   printf "<auth>
     <user>%s</user>
     <password>%s</password>
     <context>%s</context>
-  </auth>" "$AUTODNS_USER" "$AUTODNS_PASSWORD" "$AUTODNS_CONTEXT"
+    <token>%s</token>
+  </auth>" "$AUTODNS_USER" "$AUTODNS_PASSWORD" "$AUTODNS_CONTEXT" "$AUTODNS_SHARED_SECRET"
 }
 
 # Arguments:
