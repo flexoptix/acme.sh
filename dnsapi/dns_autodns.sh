@@ -134,7 +134,7 @@ _get_autodns_zone() {
       return 1
     fi
 
-    if _contains "$autodns_response" "<summary>1</summary>" >/dev/null; then
+    if _contains "$autodns_response" "<summary>1</summary>" > /dev/null; then
       _zone="$(echo "$autodns_response" | _egrep_o '<name>[^<]*</name>' | cut -d '>' -f 2 | cut -d '<' -f 1)"
       _system_ns="$(echo "$autodns_response" | _egrep_o '<system_ns>[^<]*</system_ns>' | cut -d '>' -f 2 | cut -d '<' -f 1)"
       _sub_domain=$(printf "%s" "$domain" | cut -d . -f 1-$p)
@@ -149,14 +149,14 @@ _get_autodns_zone() {
 }
 
 _build_request_auth_xml() {
-    if ! _exists oathtool; then
-      _err "Please install oathtool to use 2 Factor Authentication."
-      _err ""
-      return 1
-    fi
-        echo $AUTODNS_SHARED_SECRET
-    AUTODNS_SHARED_SECRET="$(oathtool -b --totp "${AUTODNS_SHARED_SECRET}" 2>/dev/null)"
-        echo $AUTODNS_SHARED_SECRET
+  if ! _exists oathtool; then
+    _err "Please install oathtool to use 2 Factor Authentication."
+    _err ""
+    return 1
+  fi
+  echo $AUTODNS_SHARED_SECRET
+  AUTODNS_SHARED_SECRET="$(oathtool -b --totp "${AUTODNS_SHARED_SECRET}" 2> /dev/null)"
+  echo $AUTODNS_SHARED_SECRET
   printf "<auth>
     <user>%s</user>
     <password>%s</password>
@@ -168,7 +168,7 @@ _build_request_auth_xml() {
 # Arguments:
 #   zone
 _build_zone_inquire_xml() {
-  printf "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+  printf '<?xml version="1.0" encoding="UTF-8"?>
   <request>
     %s
     <task>
@@ -183,7 +183,7 @@ _build_zone_inquire_xml() {
         <value>%s</value>
       </where>
     </task>
-  </request>" "$(_build_request_auth_xml)" "$1"
+  </request>' "$(_build_request_auth_xml)" "$1"
 }
 
 # Arguments:
@@ -192,7 +192,7 @@ _build_zone_inquire_xml() {
 #   txtvalue
 #   system_ns
 _build_zone_update_xml() {
-  printf "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+  printf '<?xml version="1.0" encoding="UTF-8"?>
   <request>
     %s
     <task>
@@ -210,7 +210,7 @@ _build_zone_update_xml() {
         <system_ns>%s</system_ns>
       </zone>
     </task>
-  </request>" "$(_build_request_auth_xml)" "$2" "$3" "$1" "$4"
+  </request>' "$(_build_request_auth_xml)" "$2" "$3" "$1" "$4"
 }
 
 # Arguments:
@@ -271,7 +271,7 @@ _autodns_api_call() {
     return 1
   fi
 
-  if _contains "$autodns_response" "<type>success</type>" >/dev/null; then
+  if _contains "$autodns_response" "<type>success</type>" > /dev/null; then
     _info "success"
     printf "%s" "$autodns_response"
     return 0
