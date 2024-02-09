@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-# -*- mode: sh; tab-width: 2; indent-tabs-mode: s; coding: utf-8 -*-
+# -*- mode: bash; tab-width: 2; indent-tabs-mode: s; coding: utf-8 -*-
 
 # This is the InternetX autoDNS xml api wrapper for acme.sh
 # Author: auerswald@gmail.com
@@ -15,7 +15,7 @@
 #
 # Dependencies:
 # -------------
-# - oathtool (When using 2 Factor Authentication)#
+# - oathtool (When using 2 Factor Authentication)
 
 AUTODNS_API="https://gateway.autodns.com"
 
@@ -119,7 +119,7 @@ _get_autodns_zone() {
   p=1
 
   while true; do
-    h=$(printf "%s" "$domain" | cut -d . -f $i-100)
+    h=$(printf "%s" "$domain" | cut -d . -f "${i}-100")
     _debug h "$h"
 
     if [ -z "$h" ]; then
@@ -137,7 +137,7 @@ _get_autodns_zone() {
     if _contains "$autodns_response" "<summary>1</summary>" > /dev/null; then
       _zone="$(echo "$autodns_response" | _egrep_o '<name>[^<]*</name>' | cut -d '>' -f 2 | cut -d '<' -f 1)"
       _system_ns="$(echo "$autodns_response" | _egrep_o '<system_ns>[^<]*</system_ns>' | cut -d '>' -f 2 | cut -d '<' -f 1)"
-      _sub_domain=$(printf "%s" "$domain" | cut -d . -f 1-$p)
+      _sub_domain=$(printf "%s" "$domain" | cut -d . -f "1-${p}")
       return 0
     fi
 
@@ -154,9 +154,9 @@ _build_request_auth_xml() {
     _err ""
     return 1
   fi
-  echo $AUTODNS_SHARED_SECRET
+  _debug "AUTODNS_SHARED_SECRET" "$AUTODNS_SHARED_SECRET"
   AUTODNS_SHARED_SECRET="$(oathtool -b --totp "${AUTODNS_SHARED_SECRET}" 2> /dev/null)"
-  echo $AUTODNS_SHARED_SECRET
+  _debug "AUTODNS_SHARED_SECRET" "$AUTODNS_SHARED_SECRET"
   printf "<auth>
     <user>%s</user>
     <password>%s</password>
